@@ -57,7 +57,20 @@ npm run server
 
 The backend API is available at `http://localhost:3001`
 
-- TBD
+#### Health Check
+
+- **GET** `/health` - Server health status
+
+#### Uber Guest Trips API
+
+- **POST** `/api/guests/trips/estimates` - Get trip fare and time estimates
+  - Request body: `{ pickup: { latitude, longitude }, dropoff: { latitude, longitude } }`
+
+- **POST** `/api/guests/trips` - Create a new guest trip
+  - Request body: `{ guest: { first_name, last_name, phone_number }, pickup: { latitude, longitude }, dropoff: { latitude, longitude }, product_id, ... }`
+
+- **GET** `/api/guests/trips/:request_id` - Get trip details by request ID
+  - Path parameter: `request_id` (UUID format)
 
 All `/api` requests from the frontend are proxied to the backend server automatically.
 
