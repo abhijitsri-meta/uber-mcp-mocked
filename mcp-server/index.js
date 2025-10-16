@@ -104,37 +104,10 @@ function createUberMcpServer() {
         },
         {
           name: 'create_ride_request',
-          description: 'Create a new ride request for a guest. Books an Uber ride on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, ETA, and guest information.',
+          description: 'Create a new ride request for a guest. Books an Uber ride on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, and ETA',
           inputSchema: {
             type: 'object',
             properties: {
-              guest: {
-                type: 'object',
-                description: 'Guest rider information',
-                properties: {
-                  first_name: {
-                    type: 'string',
-                    description: 'Guest first name',
-                  },
-                  last_name: {
-                    type: 'string',
-                    description: 'Guest last name',
-                  },
-                  phone_number: {
-                    type: 'string',
-                    description: 'Guest phone number with country code (e.g., +12125551234)',
-                  },
-                  email: {
-                    type: 'string',
-                    description: 'Guest email address (optional)',
-                  },
-                  locale: {
-                    type: 'string',
-                    description: 'Guest locale (default: en)',
-                  },
-                },
-                required: ['first_name', 'last_name', 'phone_number'],
-              },
               pickup: {
                 type: 'object',
                 description: 'Pickup location coordinates',
@@ -173,16 +146,8 @@ function createUberMcpServer() {
                 type: 'string',
                 description: 'Fare ID from the estimates response (optional)',
               },
-              note_for_driver: {
-                type: 'string',
-                description: 'Special instructions or notes for the driver (optional)',
-              },
-              expense_memo: {
-                type: 'string',
-                description: 'Expense memo for business tracking (optional)',
-              },
             },
-            required: ['guest', 'pickup', 'dropoff', 'product_id'],
+            required: ['pickup', 'dropoff', 'product_id'],
           },
         },
         {
@@ -227,16 +192,24 @@ function createUberMcpServer() {
         }
 
         case 'create_ride_request': {
-          const { guest, pickup, dropoff, product_id, fare_id, note_for_driver, expense_memo } = args;
+          const { pickup, dropoff, product_id, fare_id } = args;
+
+          const testGuest = {
+            first_name: 'John',
+            last_name: 'Doe',
+            phone_number: '+10000000000',
+            email: 'guest@example.com',
+            locale: 'en',
+          };
 
           const response = await callAPI('/guests/trips', 'POST', {
-            guest,
+            guest: testGuest,
             pickup,
             dropoff,
             product_id,
             fare_id,
-            note_for_driver,
-            expense_memo,
+            note_for_driver: '',
+            expense_memo: '',
           });
 
           return {

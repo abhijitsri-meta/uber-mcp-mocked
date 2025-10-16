@@ -4,7 +4,7 @@ MCP (Model Context Protocol) server for Uber ride booking, designed for use with
 
 ## Quick Start
 
-### 1. Start your backend API:
+### 1. Start your backend API
 
 ```bash
 # From the root of uber-mcp-pampas
@@ -13,7 +13,7 @@ npm start
 
 This starts your API on `http://localhost:3001`
 
-### 2. Start the MCP server:
+### 2. Start the MCP server
 
 ```bash
 cd mcp-server
@@ -33,7 +33,7 @@ Active sessions: 0
 
 ## Configuration
 
-### Environment Variables:
+### Environment Variables
 
 - `MCP_PORT` or `PORT`: Server port (default: 8000)
 - `API_BASE_URL`: Backend API URL (default: `http://localhost:3001/api`)
@@ -67,9 +67,11 @@ Establishes a Server-Sent Events connection for MCP protocol communication.
 Send MCP protocol messages for a specific session.
 
 **Query Parameters**:
+
 - `sessionId` (required): The session ID from the SSE connection
 
 **Headers**:
+
 - `Content-Type: application/json`
 
 ## Available Tools
@@ -81,6 +83,7 @@ The MCP server exposes three tools for Uber ride booking:
 Get price and time estimates for available Uber products between two locations.
 
 **Parameters**:
+
 - `pickup`: Object with `latitude` and `longitude`
 - `dropoff`: Object with `latitude` and `longitude`
 
@@ -88,31 +91,32 @@ Get price and time estimates for available Uber products between two locations.
 
 ### 2. create_ride_request
 
-Create a new ride request for a guest user.
+Create a new ride request for a guest user. Guest details and driver notes are automatically populated with default values.
 
 **Parameters**:
-- `guest`: Object with `first_name`, `last_name`, `phone_number`, `email` (optional), `locale` (optional)
+
 - `pickup`: Object with `latitude` and `longitude`
 - `dropoff`: Object with `latitude` and `longitude`
 - `product_id`: Uber product ID (from estimates)
 - `fare_id`: Fare ID from estimates (optional)
-- `note_for_driver`: Special instructions (optional)
-- `expense_memo`: Business tracking memo (optional)
 
 **Returns**: Ride details including request ID, ETA, and guest information
+
+**Note**: Guest details (name, phone, email) and note for driver are automatically set to default values when creating the ride request.
 
 ### 3. get_ride_details
 
 Get detailed information about an existing ride request.
 
 **Parameters**:
+
 - `request_id`: UUID of the ride request
 
 **Returns**: Comprehensive ride details including driver info, vehicle details, pickup/dropoff locations, and current status
 
 ## Using with ChatGPT
 
-### Local Development with ngrok:
+### Local Development with ngrok
 
 ```bash
 # Install ngrok if you haven't
@@ -127,9 +131,10 @@ ngrok http 8000
 
 Use the ngrok HTTPS URL (e.g., `https://abc123.ngrok.io/mcp`) in ChatGPT configuration.
 
-### Production Deployment:
+### Production Deployment
 
 Deploy to a cloud service:
+
 - **Heroku**: `git push heroku main`
 - **Railway**: Connect your GitHub repo
 - **Render**: Deploy as a web service
@@ -146,13 +151,13 @@ Configure ChatGPT with your deployed URL: `https://your-domain.com/mcp`
 
 ## Development
 
-### Start with auto-reload:
+### Start with auto-reload
 
 ```bash
 npm run dev
 ```
 
-### Testing:
+### Testing
 
 ```bash
 npm test
