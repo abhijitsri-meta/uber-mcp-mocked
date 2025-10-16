@@ -11,6 +11,19 @@ import {
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
 
+function safeStringify(obj, space = 2) {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  }, space);
+}
+
 async function callAPI(endpoint, method = 'GET', body = null) {
   const options = {
     method,
@@ -207,7 +220,7 @@ function createUberMcpServer() {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(response, null, 2),
+                text: safeStringify(response),
               },
             ],
           };
@@ -230,7 +243,7 @@ function createUberMcpServer() {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(response, null, 2),
+                text: safeStringify(response),
               },
             ],
           };
@@ -245,7 +258,7 @@ function createUberMcpServer() {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(response, null, 2),
+                text: safeStringify(response),
               },
             ],
           };
@@ -259,8 +272,8 @@ function createUberMcpServer() {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              error: error.message,
+            text: safeStringify({
+              error: error.message || String(error),
               code: 'tool_execution_error',
             }),
           },
