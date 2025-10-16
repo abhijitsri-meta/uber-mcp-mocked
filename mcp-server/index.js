@@ -7,6 +7,8 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
@@ -55,16 +57,55 @@ function createUberMcpServer() {
     {
       capabilities: {
         tools: {},
+        prompts: {},
       },
     }
   );
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return {
+      prompts: [
+        {
+          name: 'book_ride_workflow',
+          description: 'Standard workflow for booking an Uber ride with user selection',
+          arguments: [],
+        },
+      ],
+    };
+  });
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name } = request.params;
+
+    if (name === 'book_ride_workflow') {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `When booking a ride, follow this workflow:
+1. ALWAYS call get_ride_estimates first with pickup and dropoff locations
+2. Present all available ride options to the user with pricing and ETA details
+3. WAIT for the user to explicitly select which ride option they prefer
+4. Only after user selection, call create_ride_request with the chosen product_id
+
+NEVER skip step 3 - user confirmation is mandatory before booking.`,
+            },
+          },
+        ],
+      };
+    }
+
+    throw new Error(`Unknown prompt: ${name}`);
+  });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
       tools: [
         {
           name: 'get_ride_estimates',
-          description: 'Get price and time estimates for available Uber products between two locations. Returns a list of available ride options with pricing, ETA, and product details.',
+          description: 'Get price and time estimates for available Uber products between two locations. Returns a list of available ride options with pricing, ETA, and product details. REQUIRED FIRST STEP: Always call this tool first and present the options to the user for selection before booking any ride.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -104,7 +145,7 @@ function createUberMcpServer() {
         },
         {
           name: 'create_ride_request',
-          description: 'Create a new ride request for a guest. Books an Uber ride on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, and ETA',
+          description: 'Create a new ride request for a guest. Books an Uber ride on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, and ETA. IMPORTANT: Only call this tool AFTER the user has explicitly selected a ride option from the get_ride_estimates results. Never call this tool without prior user confirmation of their choice.',
           inputSchema: {
             type: 'object',
             properties: {
