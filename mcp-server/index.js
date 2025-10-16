@@ -211,25 +211,24 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    const startTime = Date.now();
+
+    console.log('\n=== Tool Call Started ===');
+    console.log(`Tool Name: ${name}`);
+    console.log(`Request Arguments: ${safeStringify(args)}`);
 
     try {
+      let response;
       switch (name) {
         case 'get_ride_estimates': {
           const { pickup, dropoff } = args;
 
-          const response = await callAPI('/guests/trips/estimates', 'POST', {
+          response = await callAPI('/guests/trips/estimates', 'POST', {
             pickup,
             dropoff,
           });
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: safeStringify(response),
-              },
-            ],
-          };
+          break;
         }
 
         case 'create_ride_request': {
@@ -243,7 +242,7 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
             locale: 'en',
           };
 
-          const response = await callAPI('/guests/trips', 'POST', {
+          response = await callAPI('/guests/trips', 'POST', {
             guest: testGuest,
             pickup,
             dropoff,
@@ -253,35 +252,42 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
             expense_memo: '',
           });
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: safeStringify(response),
-              },
-            ],
-          };
+          break;
         }
 
         case 'get_ride_details': {
           const { request_id } = args;
 
-          const response = await callAPI(`/guests/trips/${request_id}`, 'GET');
+          response = await callAPI(`/guests/trips/${request_id}`, 'GET');
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: safeStringify(response),
-              },
-            ],
-          };
+          break;
         }
 
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
+
+      const duration = Date.now() - startTime;
+      console.log(`Response: ${safeStringify(response)}`);
+      console.log(`Status: SUCCESS`);
+      console.log(`Duration: ${duration}ms`);
+      console.log('=== Tool Call Completed ===\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: safeStringify(response),
+          },
+        ],
+      };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.log(`Error: ${error.message || String(error)}`);
+      console.log(`Status: FAILED`);
+      console.log(`Duration: ${duration}ms`);
+      console.log('=== Tool Call Failed ===\n');
+
       return {
         content: [
           {
