@@ -145,7 +145,7 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
         },
         {
           name: 'create_ride_request',
-          description: 'Create a new ride request for a guest. Books an Uber ride on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, and ETA. IMPORTANT: Only call this tool AFTER the user has explicitly selected a ride option from the get_ride_estimates results. Never call this tool without prior user confirmation of their choice.',
+          description: 'Create an IMMEDIATE ride request for a guest (not scheduled). Books an Uber ride NOW on behalf of a guest user with specified pickup and dropoff locations. Returns ride details including request ID, and ETA. IMPORTANT: Only call this tool AFTER the user has explicitly selected a ride option from the get_ride_estimates results. Never call this tool without prior user confirmation of their choice. This tool only supports immediate pickup - scheduling rides for later is NOT supported.',
           inputSchema: {
             type: 'object',
             properties: {
