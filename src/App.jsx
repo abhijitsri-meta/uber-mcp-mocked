@@ -1,35 +1,33 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import './App.css';
+import ApiEndpoint from './components/ApiEndpoint';
+import { apiEndpoints } from './data/apiData';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Uber Guest Trips API Documentation</h1>
+        <p className="subtitle">Interactive API explorer for Uber guest trip management</p>
+      </header>
+
+      <main className="api-list">
+        {apiEndpoints.map((api) => (
+          <ApiEndpoint
+            key={api.id}
+            method={api.method}
+            endpoint={api.endpoint}
+            description={api.description}
+            requestPayload={api.requestPayload}
+            responsePayload={api.responsePayload}
+          />
+        ))}
+      </main>
+
+      <footer className="app-footer">
+        <p>Built for experimentation</p>
+      </footer>
+    </div>
+  );
 }
 
-export default App
+export default App;
