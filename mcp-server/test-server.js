@@ -1,13 +1,13 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+
+const MCP_SERVER_URL = process.env.MCP_TEST_URL || 'http://localhost:8000/mcp';
 
 async function testServer() {
-  console.log('Testing Uber Ride Booking MCP Server...\n');
+  console.log('Testing Uber Ride Booking MCP Server (SSE)...');
+  console.log(`Connecting to: ${MCP_SERVER_URL}\n`);
 
-  const transport = new StdioClientTransport({
-    command: 'node',
-    args: ['index.js'],
-  });
+  const transport = new SSEClientTransport(new URL(MCP_SERVER_URL));
 
   const client = new Client({
     name: 'test-client',
@@ -42,7 +42,8 @@ async function testServer() {
       },
     });
     console.log('✓ get_ride_estimates succeeded');
-    console.log(`  Response: ${estimatesResult.content[0].text.substring(0, 100)}...\n`);
+    const estimatesPreview = estimatesResult.content[0].text.substring(0, 150);
+    console.log(`  Response: ${estimatesPreview}...\n`);
 
     console.log('Testing create_ride_request...');
     const createResult = await client.callTool({
@@ -65,7 +66,8 @@ async function testServer() {
       },
     });
     console.log('✓ create_ride_request succeeded');
-    console.log(`  Response: ${createResult.content[0].text.substring(0, 100)}...\n`);
+    const createPreview = createResult.content[0].text.substring(0, 150);
+    console.log(`  Response: ${createPreview}...\n`);
 
     console.log('Testing get_ride_details...');
     const detailsResult = await client.callTool({
@@ -75,13 +77,19 @@ async function testServer() {
       },
     });
     console.log('✓ get_ride_details succeeded');
-    console.log(`  Response: ${detailsResult.content[0].text.substring(0, 100)}...\n`);
+    const detailsPreview = detailsResult.content[0].text.substring(0, 150);
+    console.log(`  Response: ${detailsPreview}...\n`);
 
     console.log('✓ All tests passed!');
 
     await client.close();
+    process.exit(0);
   } catch (error) {
     console.error('✗ Test failed:', error.message);
+    console.error('\nMake sure:');
+    console.error('1. The MCP server is running: npm start');
+    console.error('2. The backend API is running on port 3001');
+    console.error(`3. The MCP server URL is correct: ${MCP_SERVER_URL}`);
     process.exit(1);
   }
 }

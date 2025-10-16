@@ -1,219 +1,208 @@
-# Uber Ride Booking MCP Server
+# Uber MCP Server
 
-A Model Context Protocol (MCP) server that exposes Uber ride booking functionality as tools for AI assistants and other MCP clients.
+MCP (Model Context Protocol) server for Uber ride booking, designed for use with ChatGPT and other web-based AI clients via HTTP/SSE transport.
 
-## Overview
+## Quick Start
 
-This MCP server provides three main tools for interacting with Uber ride booking services:
+### 1. Start your backend API:
 
-1. **get_ride_estimates** - Get price and time estimates for available Uber products
-2. **create_ride_request** - Create a new ride request for a guest
-3. **get_ride_details** - Retrieve detailed information about an existing ride
+```bash
+# From the root of uber-mcp-pampas
+npm start
+```
 
-## Installation
+This starts your API on `http://localhost:3001`
+
+### 2. Start the MCP server:
 
 ```bash
 cd mcp-server
-npm install
+npm start
+```
+
+You should see:
+
+```
+Uber MCP Server (SSE) listening on http://localhost:8000
+  SSE stream: GET http://localhost:8000/mcp
+  Message endpoint: POST http://localhost:8000/mcp/messages?sessionId=...
+  Backend API: http://localhost:3001/api
+
+Active sessions: 0
 ```
 
 ## Configuration
 
-The MCP server calls your Express API endpoints. Configure the API base URL:
+### Environment Variables:
+
+- `MCP_PORT` or `PORT`: Server port (default: 8000)
+- `API_BASE_URL`: Backend API URL (default: `http://localhost:3001/api`)
+
+Example:
 
 ```bash
-cp .env.example .env
+MCP_PORT=9000 API_BASE_URL=http://localhost:3001/api npm start
 ```
 
-Edit `.env` to set your API URL (default: `http://localhost:3001/api`):
+## Architecture
 
-```env
-API_BASE_URL=http://localhost:3001/api
+```
+┌─────────────┐      SSE        ┌──────────────┐      HTTP       ┌─────────────┐
+│   ChatGPT   │◄────────────────►│  MCP Server  │◄───────────────►│  Backend    │
+│  (Client)   │   GET /mcp       │  (SSE/HTTP)  │   REST API      │  API        │
+│             │   POST /messages │  Port 8000   │                 │  Port 3001  │
+└─────────────┘                  └──────────────┘                 └─────────────┘
 ```
 
-**Important:** The Express API server must be running for the MCP server to work.
+## Endpoints
 
-## Usage
+### GET /mcp
 
-### Running the Server Standalone
+Establishes a Server-Sent Events connection for MCP protocol communication.
 
-```bash
-npm start
-```
+**Response**: SSE stream with session initialization
 
-**Note:** Make sure your Express API server is running on `http://localhost:3001` first!
+### POST /mcp/messages?sessionId={sessionId}
 
-### Using with Claude Desktop
+Send MCP protocol messages for a specific session.
 
-Add the following configuration to your Claude Desktop config file:
+**Query Parameters**:
+- `sessionId` (required): The session ID from the SSE connection
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "uber-ride-booking": {
-      "command": "node",
-      "args": ["/absolute/path/to/uber-mcp-pampas/mcp-server/index.js"]
-    }
-  }
-}
-```
-
-Replace `/absolute/path/to/uber-mcp-pampas/mcp-server/index.js` with the actual absolute path to the MCP server file on your system.
-
-### Using with Other MCP Clients
-
-This server uses the standard MCP protocol over stdio, so it can be integrated with any MCP-compatible client by configuring it to run the server with:
-
-```bash
-node /path/to/mcp-server/index.js
-```
+**Headers**:
+- `Content-Type: application/json`
 
 ## Available Tools
+
+The MCP server exposes three tools for Uber ride booking:
 
 ### 1. get_ride_estimates
 
 Get price and time estimates for available Uber products between two locations.
 
-**Parameters:**
+**Parameters**:
+- `pickup`: Object with `latitude` and `longitude`
+- `dropoff`: Object with `latitude` and `longitude`
 
-- `pickup` (required): Object with `latitude` and `longitude`
-- `dropoff` (required): Object with `latitude` and `longitude`
-
-**Example:**
-
-```json
-{
-  "pickup": {
-    "latitude": 40.7580,
-    "longitude": -73.9855
-  },
-  "dropoff": {
-    "latitude": 40.7489,
-    "longitude": -73.9680
-  }
-}
-```
-
-**Response:**
-Returns a list of available ride options with:
-
-- Price estimates
-- ETA information
-- Product details (UberX, UberBlack, etc.)
-- Trip distance and duration
-- Fare breakdown
+**Returns**: List of available ride options with pricing, ETA, and product details
 
 ### 2. create_ride_request
 
 Create a new ride request for a guest user.
 
-**Parameters:**
+**Parameters**:
+- `guest`: Object with `first_name`, `last_name`, `phone_number`, `email` (optional), `locale` (optional)
+- `pickup`: Object with `latitude` and `longitude`
+- `dropoff`: Object with `latitude` and `longitude`
+- `product_id`: Uber product ID (from estimates)
+- `fare_id`: Fare ID from estimates (optional)
+- `note_for_driver`: Special instructions (optional)
+- `expense_memo`: Business tracking memo (optional)
 
-- `guest` (required): Object with guest information
-  - `first_name` (required): Guest's first name
-  - `last_name` (required): Guest's last name
-  - `phone_number` (required): Guest's phone number with country code
-  - `email` (optional): Guest's email address
-  - `locale` (optional): Guest's locale (default: "en")
-- `pickup` (required): Object with `latitude` and `longitude`
-- `dropoff` (required): Object with `latitude` and `longitude`
-- `product_id` (required): Uber product ID (from estimates response)
-- `fare_id` (optional): Fare ID from the estimates response
-- `note_for_driver` (optional): Special instructions for the driver
-- `expense_memo` (optional): Expense memo for business tracking
-
-**Example:**
-
-```json
-{
-  "guest": {
-    "first_name": "John",
-    "last_name": "Doe",
-    "phone_number": "+12125551234",
-    "email": "john.doe@example.com"
-  },
-  "pickup": {
-    "latitude": 40.7580,
-    "longitude": -73.9855
-  },
-  "dropoff": {
-    "latitude": 40.7489,
-    "longitude": -73.9680
-  },
-  "product_id": "b8e5c464-5de2-4539-a35a-986d6e58f186",
-  "note_for_driver": "Please call when you arrive"
-}
-```
-
-**Response:**
-Returns:
-
-- Request ID (for tracking the ride)
-- ETA
-- Product ID
-- Status
-- Guest information with generated guest_id
+**Returns**: Ride details including request ID, ETA, and guest information
 
 ### 3. get_ride_details
 
 Get detailed information about an existing ride request.
 
-**Parameters:**
+**Parameters**:
+- `request_id`: UUID of the ride request
 
-- `request_id` (required): UUID of the ride request
+**Returns**: Comprehensive ride details including driver info, vehicle details, pickup/dropoff locations, and current status
 
-**Example:**
+## Using with ChatGPT
 
-```json
-{
-  "request_id": "f3a604eb-8b90-4068-932c-13d6a5002f86"
-}
+### Local Development with ngrok:
+
+```bash
+# Install ngrok if you haven't
+brew install ngrok
+
+# Start your MCP server
+npm start
+
+# In another terminal, expose it via ngrok
+ngrok http 8000
 ```
 
-**Response:**
-Returns comprehensive ride details including:
+Use the ngrok HTTPS URL (e.g., `https://abc123.ngrok.io/mcp`) in ChatGPT configuration.
 
-- Request status
-- Driver information (name, phone, rating, picture)
-- Vehicle details (make, model, license plate, color)
-- Pickup and dropoff locations with addresses
-- Current location
-- Rider tracking URL
-- ETA information
-- Notes and expense memo
+### Production Deployment:
 
-## MCP Specification Compliance
+Deploy to a cloud service:
+- **Heroku**: `git push heroku main`
+- **Railway**: Connect your GitHub repo
+- **Render**: Deploy as a web service
+- **Vercel/Netlify**: Deploy with Node.js runtime
 
-This server follows the Model Context Protocol specification:
+Configure ChatGPT with your deployed URL: `https://your-domain.com/mcp`
 
-- **Transport**: Uses stdio transport for communication
-- **Tools**: Implements the `tools/list` and `tools/call` capabilities
-- **Error Handling**: Returns structured error responses with error codes
-- **Schema Validation**: Uses JSON Schema for input validation
-- **Content Types**: Returns results as text content type with JSON formatting
+## Session Management
+
+- Each client connection creates a new MCP server instance
+- Sessions are tracked by unique session IDs
+- Automatic cleanup when clients disconnect
+- Server logs active session count every 30 seconds
 
 ## Development
 
-### Testing Locally
-
-You can test the server using the MCP Inspector:
+### Start with auto-reload:
 
 ```bash
-npx @modelcontextprotocol/inspector node index.js
+npm run dev
 ```
 
-This will open a web interface where you can test the tools interactively.
+### Testing:
 
-### Extending the Server
+```bash
+npm test
+```
 
-To add new tools or modify existing ones:
+## Troubleshooting
 
-1. Add the tool definition to the `ListToolsRequestSchema` handler
-2. Implement the tool logic in the `CallToolRequestSchema` handler
-3. Ensure proper error handling and validation
+### Port already in use
+
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Use a different port
+MCP_PORT=9000 npm start
+```
+
+### Backend API not responding
+
+- Ensure backend API is running on port 3001
+- Check `API_BASE_URL` environment variable
+- Verify API endpoints are accessible
+
+### CORS issues
+
+The server allows all origins by default (`Access-Control-Allow-Origin: *`). To restrict:
+
+```javascript
+// In index.js, modify the CORS headers
+res.setHeader('Access-Control-Allow-Origin', 'https://chat.openai.com');
+```
+
+## Files
+
+- `index.js` - Main MCP server with SSE transport
+- `package.json` - Dependencies and scripts
+- `test-server.js` - Test client for the server
+- `.env` - Environment configuration
+- `claude_desktop_config.example.json` - Legacy Claude Desktop config (not used)
+- `index-stdio.js.backup` - Backup of stdio version (for Claude Desktop)
+
+## Migration Note
+
+This server now uses **SSE/HTTP transport** by default for web clients like ChatGPT.
+
+If you need the **stdio version** for Claude Desktop, it's backed up in `index-stdio.js.backup`. To use it:
+
+```bash
+node index-stdio.js.backup
+```
 
 ## License
 

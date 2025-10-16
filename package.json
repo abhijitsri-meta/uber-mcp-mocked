@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "dev:all": "concurrently \"npm run server\" \"npm run client\" \"npm run mcp:inspect\"",
+    "dev:all": "concurrently \"npm run server\" \"npm run client\" \"npm run mcp\"",
     "client": "vite",
     "server": "nodemon server/index.js",
-    "mcp:inspect": "cd mcp-server && npx @modelcontextprotocol/inspector node index.js",
+    "mcp": "cd mcp-server && npm run dev",
+    "mcp:start": "cd mcp-server && npm start",
     "mcp:test": "cd mcp-server && npm test",
     "build": "vite build",
     "lint": "eslint .",

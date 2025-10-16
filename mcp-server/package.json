@@ -1,12 +1,9 @@
 {
   "name": "uber-ride-booking-mcp",
   "version": "1.0.0",
-  "description": "Model Context Protocol server for Uber Ride Booking",
+  "description": "Model Context Protocol server for Uber Ride Booking (SSE/HTTP for ChatGPT)",
   "type": "module",
   "main": "index.js",
-  "bin": {
-    "uber-ride-booking-mcp": "./index.js"
-  },
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
