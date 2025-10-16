@@ -1,0 +1,26 @@
+{
+  "name": "uber-ride-booking-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for Uber Ride Booking",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "uber-ride-booking-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test-server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "uber",
+    "ride-booking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "uber-ride-booking": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/uber-mcp-pampas/mcp-server/index.js"
+      ]
+    }
+  }
+}
