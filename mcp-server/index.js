@@ -300,22 +300,32 @@ async function handleSseRequest(res) {
 
   sessions.set(sessionId, { server, transport });
 
+  let isClosing = false;
+
   transport.onclose = async () => {
-    sessions.delete(sessionId);
-    await server.close();
-    console.log(`Session closed: ${sessionId}`);
+    if (isClosing) return;
+    isClosing = true;
+
+    try {
+      sessions.delete(sessionId);
+      await server.close();
+      console.log(`Session closed: ${sessionId}`);
+    } catch (error) {
+      console.error(`Error closing session ${sessionId}:`, error.message);
+    }
   };
 
   transport.onerror = (error) => {
-    console.error('SSE transport error', error);
+    console.error('SSE transport error:', error?.message || error);
   };
 
   try {
     await server.connect(transport);
     console.log(`New SSE session started: ${sessionId}`);
   } catch (error) {
+    isClosing = true;
     sessions.delete(sessionId);
-    console.error('Failed to start SSE session', error);
+    console.error('Failed to start SSE session:', error?.message || error);
     if (!res.headersSent) {
       res.writeHead(500).end('Failed to establish SSE connection');
     }
@@ -385,8 +395,10 @@ const httpServer = createServer(async (req, res) => {
 });
 
 httpServer.on('clientError', (err, socket) => {
-  console.error('HTTP client error', err);
-  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+  console.error('HTTP client error:', err?.message || 'Unknown error');
+  if (socket.writable) {
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+  }
 });
 
 httpServer.listen(port, () => {
