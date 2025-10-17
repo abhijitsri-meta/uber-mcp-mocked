@@ -52,6 +52,7 @@ async function callAPI(endpoint, method = 'GET', body = null) {
 }
 
 // Widget configuration for UI rendering
+// Following the pizzaz pattern: reference pre-built assets
 const rideEstimatesWidget = {
   id: 'ride-estimates',
   title: 'Ride Estimates',
@@ -59,32 +60,8 @@ const rideEstimatesWidget = {
   invoking: 'Loading ride estimates',
   invoked: 'Loaded ride estimates',
   html: `
-<div id="ride-estimates-root"></div>
-<script type="module">
-  import React from 'https://esm.sh/react@18.2.0';
-  import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
-
-  function RideEstimates() {
-    return React.createElement('div', {
-      style: {
-        padding: '20px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        maxWidth: '600px',
-        margin: '0 auto'
-      }
-    },
-      React.createElement('h1', {
-        style: { color: '#000', fontSize: '24px', marginBottom: '16px' }
-      }, 'Hello World'),
-      React.createElement('p', {
-        style: { color: '#666', fontSize: '16px' }
-      }, 'This is a simple React component rendered from the Uber MCP server!')
-    );
-  }
-
-  const root = ReactDOM.createRoot(document.getElementById('ride-estimates-root'));
-  root.render(React.createElement(RideEstimates));
-</script>
+<div id="ride-estimate-root"></div>
+<script type="module" src="http://localhost:3000/ride-estimate.js"></script>
   `.trim(),
   responseText: 'Rendered ride estimates widget!'
 };
@@ -520,6 +497,8 @@ const httpServer = createServer(async (req, res) => {
     await handlePostMessage(req, res, url);
     return;
   }
+
+
 
   res.writeHead(404).end('Not Found');
 });
