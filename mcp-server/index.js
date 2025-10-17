@@ -9,6 +9,9 @@ import {
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  ListResourceTemplatesRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
@@ -48,6 +51,54 @@ async function callAPI(endpoint, method = 'GET', body = null) {
   return response.json();
 }
 
+// Widget configuration for UI rendering
+const rideEstimatesWidget = {
+  id: 'ride-estimates',
+  title: 'Ride Estimates',
+  templateUri: 'ui://widget/ride-estimates.html',
+  invoking: 'Loading ride estimates',
+  invoked: 'Loaded ride estimates',
+  html: `
+<div id="ride-estimates-root"></div>
+<script type="module">
+  import React from 'https://esm.sh/react@18.2.0';
+  import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
+
+  function RideEstimates() {
+    return React.createElement('div', {
+      style: {
+        padding: '20px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }
+    },
+      React.createElement('h1', {
+        style: { color: '#000', fontSize: '24px', marginBottom: '16px' }
+      }, 'Hello World'),
+      React.createElement('p', {
+        style: { color: '#666', fontSize: '16px' }
+      }, 'This is a simple React component rendered from the Uber MCP server!')
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('ride-estimates-root'));
+  root.render(React.createElement(RideEstimates));
+</script>
+  `.trim(),
+  responseText: 'Rendered ride estimates widget!'
+};
+
+function widgetMeta(widget) {
+  return {
+    'openai/outputTemplate': widget.templateUri,
+    'openai/toolInvocation/invoking': widget.invoking,
+    'openai/toolInvocation/invoked': widget.invoked,
+    'openai/widgetAccessible': true,
+    'openai/resultCanProduceWidget': true
+  };
+}
+
 function createUberMcpServer() {
   const server = new Server(
     {
@@ -58,6 +109,7 @@ function createUberMcpServer() {
       capabilities: {
         tools: {},
         prompts: {},
+        resources: {},
       },
     }
   );
@@ -98,6 +150,51 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
     }
 
     throw new Error(`Unknown prompt: ${name}`);
+  });
+
+  // Add resource handlers for UI widget
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return {
+      resources: [
+        {
+          uri: rideEstimatesWidget.templateUri,
+          name: rideEstimatesWidget.title,
+          description: `${rideEstimatesWidget.title} widget markup`,
+          mimeType: 'text/html+skybridge',
+          _meta: widgetMeta(rideEstimatesWidget)
+        }
+      ]
+    };
+  });
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    if (request.params.uri === rideEstimatesWidget.templateUri) {
+      return {
+        contents: [
+          {
+            uri: rideEstimatesWidget.templateUri,
+            mimeType: 'text/html+skybridge',
+            text: rideEstimatesWidget.html,
+            _meta: widgetMeta(rideEstimatesWidget)
+          }
+        ]
+      };
+    }
+    throw new Error(`Unknown resource: ${request.params.uri}`);
+  });
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return {
+      resourceTemplates: [
+        {
+          uriTemplate: rideEstimatesWidget.templateUri,
+          name: rideEstimatesWidget.title,
+          description: `${rideEstimatesWidget.title} widget markup`,
+          mimeType: 'text/html+skybridge',
+          _meta: widgetMeta(rideEstimatesWidget)
+        }
+      ]
+    };
   });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -142,6 +239,7 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
             },
             required: ['pickup', 'dropoff'],
           },
+          _meta: widgetMeta(rideEstimatesWidget),
         },
         {
           name: 'create_ride_request',
@@ -273,14 +371,26 @@ NEVER skip step 3 - user confirmation is mandatory before booking.`,
       console.log(`Duration: ${duration}ms`);
       console.log('=== Tool Call Completed ===\n');
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: safeStringify(response),
-          },
-        ],
-      };
+      if (name === 'get_ride_estimates') {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: safeStringify(response),
+            },
+          ],
+          _meta: widgetMeta(rideEstimatesWidget),
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: safeStringify(response),
+            },
+          ],
+        };
+      }
     } catch (error) {
       const duration = Date.now() - startTime;
       console.log(`Error: ${error.message || String(error)}`);
