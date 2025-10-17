@@ -12,8 +12,8 @@
 │  4. Loads http://localhost:8000/widgets/ride-estimate.js│
 │  5. Renders widget UI                                  │
 └─────────────────────────────────────────────────────────┘
-                           ▲
-                           │
+                            ▲
+                            │
 ┌─────────────────────────────────────────────────────────┐
 │ MCP Server (port 8000)                                  │
 │                                                         │
@@ -24,7 +24,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Key Components:
+### Key Components
 
 - **Widget Source**: `/src/widgets/{widget-name}/index.jsx` - React components
 - **Build Output**: `/mcp-server/widget-assets/{widget-name}.js` - Built bundles
@@ -59,10 +59,48 @@ npm run dev:all (which will start the mcp server also)
 ```
 
 The MCP server will:
+
 - Listen on `http://localhost:8000/mcp` for ChatGPT
 - Serve widget assets at `http://localhost:8000/widgets/*`
 
 Connect ChatGPT to `http://localhost:8000/mcp` and test!
+
+### Running on Remote Servers
+
+When deploying to a remote server (e.g., Codespaces, cloud VMs), you need to configure the public URL:
+
+```bash
+# Set the public URL environment variable
+export MCP_PUBLIC_URL=https://your-server.com:8000
+
+# Start the MCP server
+cd mcp-server
+npm start
+```
+
+**Important**: Do NOT include a trailing slash in the URL. The server automatically removes it to prevent double-slash issues.
+
+#### Widget Asset Serving & CORS
+
+The MCP server now serves widget assets directly at `/widget-assets/*` with proper CORS headers:
+
+- **Built widgets**: Located in `/mcp-server/widget-assets/`
+- **Asset endpoint**: `${MCP_PUBLIC_URL}/widget-assets/ride-estimate.js`
+- **CORS support**: Handles both OPTIONS (preflight) and GET requests with `Access-Control-Allow-Origin: *`
+- **Absolute URLs**: Widget HTML uses `${MCP_PUBLIC_URL}` to generate absolute URLs that work across domains
+
+This ensures widgets load correctly when:
+
+- Running on remote servers (Codespaces, cloud VMs, etc.)
+- Accessed from ChatGPT's sandboxed iframes
+- Cross-origin requests are required
+
+The server configuration:
+
+- Automatically strips trailing slashes from `MCP_PUBLIC_URL`
+- Serves widget assets with proper MIME types
+- Includes CORS headers on all widget asset responses
+- Handles CORS preflight (OPTIONS) requests
 
 ## 3. Testing Locally
 
@@ -72,9 +110,10 @@ Connect ChatGPT to `http://localhost:8000/mcp` and test!
 npm run dev:all
 ```
 
-Then open **http://localhost:4444/widgets** to see all available widgets.
+Then open **<http://localhost:4444/widgets>** to see all available widgets.
 
 This starts Vite's dev server with:
+
 - ⚡ **Hot Module Replacement** - Instant updates
 - 🎨 **Widget Index** - Lists all widgets at `/widgets`
 - 🔥 **No Build Step** - Changes reflect immediately
@@ -111,7 +150,7 @@ const root = createRoot(document.getElementById('my-new-widget-root'));
 root.render(<MyWidget />);
 ```
 
-**That's it!** The widget is automatically discovered by Vite (via `vite.config.js`'s `buildWidgetInputs()` function). No manual configuration needed - just refresh http://localhost:4444/widgets and your new widget will appear in the list!
+**That's it!** The widget is automatically discovered by Vite (via `vite.config.js`'s `buildWidgetInputs()` function). No manual configuration needed - just refresh <http://localhost:4444/widgets> and your new widget will appear in the list!
 
 ### Widget Auto-Discovery
 
@@ -127,8 +166,9 @@ function buildWidgetInputs() {
 ```
 
 Any directory in `/src/widgets/` with an `index.jsx` or `index.tsx` file is automatically:
+
 - ✅ Added to the dev server
 - ✅ Available for building
-- ✅ Listed at http://localhost:4444/widgets
+- ✅ Listed at <http://localhost:4444/widgets>
 
 **No manual configuration required!**

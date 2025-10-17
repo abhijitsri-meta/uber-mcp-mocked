@@ -19,5 +19,11 @@ function RideEstimates() {
   );
 }
 
-const root = createRoot(document.getElementById('ride-estimate-root'));
-root.render(<RideEstimates />);
+// Wait for DOM to be ready before mounting
+const rootElement = document.getElementById('ride-estimate-root');
+if (rootElement) {
+  const root = createRoot(rootElement);
+  root.render(<RideEstimates />);
+} else {
+  console.error('Root element #ride-estimate-root not found');
+}

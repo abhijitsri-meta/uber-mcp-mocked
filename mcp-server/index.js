@@ -2,6 +2,9 @@
 
 import { createServer } from 'node:http';
 import { URL } from 'node:url';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
@@ -14,7 +17,22 @@ import {
   ListResourceTemplatesRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
+const ASSETS_DIR = join(__dirname, 'widget-assets');
+
+let MCP_PUBLIC_URL = process.env.MCP_PUBLIC_URL || `http://localhost:${process.env.MCP_PORT || process.env.PORT || 8000}`;
+
+const MIME_TYPES = {
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.html': 'text/html',
+  '.json': 'application/json',
+  '.map': 'application/json',
+  '.svg': 'image/svg+xml',
+};
 
 function safeStringify(obj, space = 2) {
   const seen = new WeakSet();
@@ -61,7 +79,7 @@ const rideEstimatesWidget = {
   invoked: 'Loaded ride estimates',
   html: `
 <div id="ride-estimate-root"></div>
-<script type="module" src="http://localhost:3000/ride-estimate.js"></script>
+<script type="module" crossorigin src="${MCP_PUBLIC_URL}/widget-assets/ride-estimate.js"></script>
   `.trim(),
   responseText: 'Rendered ride estimates widget!'
 };
@@ -498,7 +516,52 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  // Handle OPTIONS for widget assets (CORS preflight)
+  if (req.method === 'OPTIONS' && url.pathname.startsWith('/widget-assets/')) {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'content-type',
+    });
+    res.end();
+    return;
+  }
 
+  // Serve widget assets
+  if (req.method === 'GET' && url.pathname.startsWith('/widget-assets/')) {
+    const filename = url.pathname.substring('/widget-assets/'.length);
+    const filePath = join(ASSETS_DIR, filename);
+
+    // Security check: ensure path is within ASSETS_DIR
+    if (!filePath.startsWith(ASSETS_DIR)) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+
+    if (!existsSync(filePath)) {
+      res.writeHead(404).end('Not Found');
+      return;
+    }
+
+    try {
+      const content = readFileSync(filePath);
+      const ext = filename.substring(filename.lastIndexOf('.'));
+      const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      res.writeHead(200, {
+        'Content-Type': mimeType,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'content-type',
+      });
+      res.end(content);
+      console.log(`Served widget asset: ${filename}`);
+    } catch (error) {
+      console.error(`Error serving widget asset ${filename}:`, error.message);
+      res.writeHead(500).end('Internal Server Error');
+    }
+    return;
+  }
 
   res.writeHead(404).end('Not Found');
 });
